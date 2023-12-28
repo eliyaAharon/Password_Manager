@@ -2,6 +2,7 @@ from tkinter import *
 from tkinter import messagebox
 import random
 import pyperclip
+import json
 
 
 def generate_password():
@@ -32,16 +33,50 @@ def generate_password():
 
 def save_to_file():
     """saving the data in a txt file when the user click the "Add" button """
+
+    new_data = {website_input.get():
+        {
+            "email": email_input.get(),
+            "password": password_input.get()
+        }}
     if len(website_input.get()) == 0 or len(password_input.get()) == 0 or len(email_input.get()) == 0:
         messagebox.showinfo(title="Oops", message="Please make sure you entered all the fields")
     else:
         is_ok = messagebox.askokcancel(title=website_input.get(),
                                        message=f"These are the details entered:\n Email: {email_input.get()}\n Password: {password_input.get()}\n is is ok to save? ")
         if is_ok:
-            with open("passwords_saver.txt", "a") as file:
-                file.write(f"{website_input.get()} | {email_input.get()} | {password_input.get()}\n")
+
+            try:
+                with open("passwords_saver.json", "r") as file:
+                    data = json.load(file)
+            except FileNotFoundError:
+                with open("passwords_saver.json", "w") as file:
+                    json.dump(new_data, file, indent=4)
+            else:
+                data.update(new_data)
+
+                with open("passwords_saver.json", "w") as file:
+                    json.dump(data, file, indent=4)
+
+            finally:
                 website_input.delete(0, END)
                 password_input.delete(0, END)
+
+
+def find_password():
+    website = website_input.get()
+    try:
+        with open("passwords_saver.json", "r") as passwords_file:
+            data = json.load(passwords_file)
+            try:
+                password = data[website]["password"]
+                email = data[website]["email"]
+                messagebox.showinfo(title=website, message=f"Email: {email} \n Password: {password}")
+            except KeyError:
+                messagebox.showerror(title="Invalid website name",
+                                     message="Sorry..\n We did not find details for this website")
+    except FileNotFoundError:
+        messagebox.showerror(title="No data base", message="Your passwords saver is empty...")
 
 
 window = Tk()
@@ -59,18 +94,23 @@ website_label = Label(text="Website")
 website_label.grid(row=1, column=0)
 
 # website input
-website_input = Entry(width=35)
+website_input = Entry(width=21)
 website_input.focus()
-website_input.grid(row=1, column=1, columnspan=2)
+website_input.grid(row=1, column=1)
+
+# search button
+search_button = Button(text="Search", fg="red")
+search_button.config(command=find_password)
+search_button.grid(row=1, column=2, columnspan=2)
 
 # email label
 email_label = Label(text="Email/Username")
 email_label.grid(row=2, column=0)
 
 # email input
-email_input = Entry(width=35)
+email_input = Entry(width=21)
 email_input.insert(0, "eliyahron13@gmail.com")
-email_input.grid(row=2, column=1, columnspan=2)
+email_input.grid(row=2, column=1)
 
 # password label
 password_label = Label(text="Password")
